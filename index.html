@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Coin Bumper Cash</title>
+<script src='//libtl.com/sdk.js' data-zone='12246483' data-sdk='show_12246483'></script>
 <style>
   * {
     box-sizing: border-box;
@@ -408,11 +409,11 @@
     </div>
   </div>
 
-  <!-- MODAL IKLAN -->
+  <!-- MODAL LOADING IKLAN -->
   <div class="modal-overlay" id="ad-modal">
     <div class="modal-card">
       <div class="modal-title">Menonton Iklan Sponsor...</div>
-      <div class="modal-desc" id="ad-countdown-text">Hadiah akan masuk dalam 3 detik...</div>
+      <div class="modal-desc" id="ad-countdown-text">Hadiah akan masuk setelah iklan selesai...</div>
       <div style="font-size: 32px; font-weight: bold; color: #38bdf8;" id="ad-timer">3</div>
     </div>
   </div>
@@ -460,7 +461,6 @@
     </div>
   </div>
 
-  <!-- MODAL FORCE UPDATE / GAME KADALUARSA -->
   <div class="modal-overlay" id="update-modal" style="z-index: 999;">
     <div class="modal-card" style="border-color: #ef4444;">
       <div class="modal-title" style="color: #ef4444;">⚠️ PEMBERITAHUAN PENTING</div>
@@ -471,13 +471,27 @@
 </div>
 
 <script>
-  // --- PENGATURAN VERSI & API ---
   const APP_VERSION        = "1.1";
   const TELEGRAM_BOT_TOKEN = "9078785001:AAGz2vRmMPFuGvcXOK5BPKexijnmIEWWSrg";
   const TELEGRAM_CHAT_ID   = "7267872261";
   const REMOTE_CONFIG_URL  = "https://gist.githubusercontent.com/CoinBumper/6753c4fd3f7df26ec9de21719a49e05f/raw/gistfile1.txt";
 
   let downloadUrlTarget = "https://google.com";
+
+  function initMonetagInApp() {
+    if (typeof show_12246483 === 'function') {
+      show_12246483({
+        type: 'inApp',
+        inAppSettings: {
+          frequency: 2,
+          capping: 0.1,
+          interval: 30,
+          timeout: 5,
+          everyPage: false
+        }
+      });
+    }
+  }
 
   async function checkRemoteConfig() {
     try {
@@ -497,7 +511,6 @@
     window.open(downloadUrlTarget, "_blank");
   }
 
-  // --- DATA GAME ---
   let gameData = JSON.parse(localStorage.getItem('coinBumperSave')) || {
     coins: 0,
     cash: 0,
@@ -659,7 +672,7 @@
           hitSlot = true;
           if (s.mult === 5) {
             gameData.cash = Math.round((gameData.cash + 0.5) * 10) / 10;
-            addFloatingText(c.x, s.y - 10, '+Rp 0.5', '#34d399');
+            addFloatingText(c.x, s.y - 10, '+Rp 0,5', '#34d399');
           } else {
             const coinGain = (gameData.incomeLvl * s.mult) * multBoost;
             gameData.coins += coinGain;
@@ -740,6 +753,19 @@
   }
 
   function triggerAdReward(rewardType) {
+    if (typeof show_12246483 === 'function') {
+      show_12246483().then(() => {
+        giveAdPrize(rewardType);
+      }).catch((err) => {
+        console.log("Monetag ad error/skipped:", err);
+        runFallbackTimer(rewardType);
+      });
+    } else {
+      runFallbackTimer(rewardType);
+    }
+  }
+
+  function runFallbackTimer(rewardType) {
     const modal = document.getElementById('ad-modal');
     const timerEl = document.getElementById('ad-timer');
     modal.style.display = 'flex';
@@ -752,12 +778,12 @@
       if (sec <= 0) {
         clearInterval(interval);
         modal.style.display = 'none';
-        applyAdPrize(rewardType);
+        giveAdPrize(rewardType);
       }
     }, 1000);
   }
 
-  function applyAdPrize(type) {
+  function giveAdPrize(type) {
     if (type === 'coins') {
       gameData.coins += 500;
       addFloatingText(width / 2, height / 2, '+500 KOIN BONUS!', '#fbbf24');
@@ -858,9 +884,10 @@
 ` +
                           `💰 *Nominal:* Rp ${amount.toLocaleString('id-ID')}
 ` +
-                          `🕒 *Waktu:* ${waktu}\n`+
-   `━━━━━━━━━━━━━━━━━━━━\n`+
-      `Segera cek & proses transfer manual.`;                   
+                          `🕒 *Waktu:* ${waktu}
+` +
+`━━━━━━━━━━━━━━━━━━━━\n` +
+`Segera cek & proses transfer manual.`;                   
 
     try {
       await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
@@ -910,6 +937,7 @@
   resizeCanvas();
   updateUI();
   checkRemoteConfig();
+  initMonetagInApp();
   requestAnimationFrame(gameLoop);
 </script>
 </body>
