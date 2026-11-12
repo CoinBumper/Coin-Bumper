@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Coin Bumper Cash</title>
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  body {
+    background-color: #071324;
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  #app-container {
+    width: 100%;
+    max-width: 420px;
+    height: 100vh;
+    max-height: 850px;
+    background: linear-gradient(180deg, #0b1d36 0%, #06101f 100%);
+    border: 2px solid #1e487a;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: 0 0 25px rgba(0, 174, 255, 0.25);
+  }
+
+  #top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 10px;
+    background: rgba(13, 35, 64, 0.9);
+    border-bottom: 2px solid #1d4ed8;
+    gap: 6px;
+  }
+
+  .stat-box {
+    background: #09172b;
+    border: 1px solid #2563eb;
+    border-radius: 10px;
+    padding: 6px 10px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    color: #93c5fd;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .stat-value {
+    font-size: 14px;
+    font-weight: bold;
+    color: #fbbf24;
+    margin-top: 2px;
+  }
+
+  .stat-value.cash {
+    color: #34d399;
+  }
+
+  #btn-withdraw {
+    background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-weight: bold;
+    font-size: 12px;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #047857;
+    transition: transform 0.1s;
+  }
+
+  #btn-withdraw:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #047857;
+  }
+
+  #arena-wrapper {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .tap-hint {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: rgba(147, 197, 253, 0.7);
+    background: rgba(9, 23, 43, 0.6);
+    padding: 3px 10px;
+    border-radius: 12px;
+    pointer-events: none;
+  }
+
+  #bottom-panel {
+    background: #0a192f;
+    border-top: 2px solid #1d4ed8;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ad-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .ad-box {
+    background: linear-gradient(180deg, #1e3a8a 0%, #172554 100%);
+    border: 1px solid #3b82f6;
+    border-radius: 8px;
+    padding: 6px 4px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.15s;
+    position: relative;
+  }
+
+  .ad-box:active {
+    transform: scale(0.95);
+  }
+
+  .ad-badge {
+    background: #f59e0b;
+    color: #000;
+    font-size: 9px;
+    font-weight: bold;
+    padding: 1px 4px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 3px;
+  }
+
+  .ad-title {
+    font-size: 11px;
+    font-weight: bold;
+    color: #fff;
+  }
+
+  .ad-sub {
+    font-size: 9px;
+    color: #93c5fd;
+  }
+
+  .upgrade-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .upg-btn {
+    background: linear-gradient(180deg, #1d4ed8 0%, #1e40af 100%);
+    border: 1px solid #60a5fa;
+    border-radius: 8px;
+    padding: 8px 4px;
+    color: white;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #1e3a8a;
+  }
+
+  .upg-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #1e3a8a;
+  }
+
+  .upg-btn:disabled {
+    background: #1e293b;
+    border-color: #334155;
+    box-shadow: none;
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .upg-name {
+    font-size: 10px;
+    color: #bfdbfe;
+    font-weight: bold;
+  }
+
+  .upg-lvl {
+    font-size: 11px;
+    margin: 2px 0;
+  }
+
+  .upg-cost {
+    font-size: 11px;
+    font-weight: bold;
+    color: #fbbf24;
+  }
+
+  .modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.88);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+    z-index: 50;
+  }
+
+  .modal-card {
+    background: #0f2342;
+    border: 2px solid #3b82f6;
+    border-radius: 14px;
+    width: 100%;
+    padding: 18px;
+    text-align: center;
+  }
+
+  .modal-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #fbbf24;
+    margin-bottom: 10px;
+  }
+
+  .modal-desc {
+    font-size: 13px;
+    color: #cbd5e1;
+    margin-bottom: 14px;
+    line-height: 1.4;
+  }
+
+  .form-group {
+    text-align: left;
+    margin-bottom: 10px;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 11px;
+    color: #93c5fd;
+    margin-bottom: 4px;
+    margin-top: 6px;
+  }
+
+  .form-group select, .form-group input {
+    width: 100%;
+    padding: 9px;
+    border-radius: 8px;
+    border: 1px solid #3b82f6;
+    background: #071324;
+    color: white;
+    font-size: 13px;
+  }
+
+  .btn-primary {
+    width: 100%;
+    padding: 10px;
+    background: #10b981;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 6px;
+  }
+
+  .btn-primary:disabled {
+    background: #334155;
+    color: #94a3b8;
+    cursor: not-allowed;
+  }
+
+  .btn-close {
+    width: 100%;
+    padding: 8px;
+    background: transparent;
+    border: 1px solid #64748b;
+    border-radius: 8px;
+    color: #cbd5e1;
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+
+  #limit-box {
+    display: none;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid #ef4444;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    color: #fca5a5;
+    font-size: 12px;
+  }
+
+  #limit-timer {
+    font-size: 18px;
+    font-weight: bold;
+    color: #fbbf24;
+    margin-top: 4px;
+    font-family: monospace;
+  }
+
+  #history-list {
+    margin-top: 12px;
+    max-height: 110px;
+    overflow-y: auto;
+    text-align: left;
+    background: #071324;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 11px;
+  }
+
+  .history-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px solid #1e293b;
+  }
+</style>
+</head>
+<body>
+
+<div id="app-container">
+  <div id="top-bar">
+    <div class="stat-box">
+      <span class="stat-label">Koin Upgrade</span>
+      <span class="stat-value" id="ui-coins">0</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-label">Saldo Tarik</span>
+      <span class="stat-value cash" id="ui-cash">Rp 0</span>
+    </div>
+    <button id="btn-withdraw" onclick="openWithdrawModal()">TARIK</button>
+  </div>
+
+  <div id="arena-wrapper" onclick="manualDropCoin(event)">
+    <div class="tap-hint">Tap layar untuk jatuhkan koin cepat!</div>
+    <canvas id="gameCanvas"></canvas>
+  </div>
+
+  <div id="bottom-panel">
+    <div class="ad-grid">
+      <div class="ad-box" onclick="triggerAdReward('coins')">
+        <div class="ad-badge">ADS</div>
+        <div class="ad-title">+500 Koin</div>
+        <div class="ad-sub">Klaim Instan</div>
+      </div>
+      <div class="ad-box" onclick="triggerAdReward('cash')">
+        <div class="ad-badge">ADS</div>
+        <div class="ad-title">+Rp 5</div>
+        <div class="ad-sub">Saldo Tarik</div>
+      </div>
+      <div class="ad-box" onclick="triggerAdReward('rain')">
+        <div class="ad-badge">ADS</div>
+        <div class="ad-title">Hujan Koin</div>
+        <div class="ad-sub">15 Koin Jatuh</div>
+      </div>
+      <div class="ad-box" onclick="triggerAdReward('double')">
+        <div class="ad-badge">ADS</div>
+        <div class="ad-title">2X Income</div>
+        <div class="ad-sub" id="ui-boost-timer">30 Detik</div>
+      </div>
+    </div>
+
+    <div class="upgrade-grid">
+      <button class="upg-btn" id="btn-upg-bumper" onclick="buyUpgrade('bumper')">
+        <div class="upg-name">BUMPER</div>
+        <div class="upg-lvl" id="lvl-bumper">Lv 1 → 2</div>
+        <div class="upg-cost" id="cost-bumper">100 Koin</div>
+      </button>
+      <button class="upg-btn" id="btn-upg-income" onclick="buyUpgrade('income')">
+        <div class="upg-name">BASE INCOME</div>
+        <div class="upg-lvl" id="lvl-income">Lv 1 → 2</div>
+        <div class="upg-cost" id="cost-income">150 Koin</div>
+      </button>
+      <button class="upg-btn" id="btn-upg-speed" onclick="buyUpgrade('speed')">
+        <div class="upg-name">AUTO SPEED</div>
+        <div class="upg-lvl" id="lvl-speed">Lv 1 → 2</div>
+        <div class="upg-cost" id="cost-speed">200 Koin</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL IKLAN -->
+  <div class="modal-overlay" id="ad-modal">
+    <div class="modal-card">
+      <div class="modal-title">Menonton Iklan Sponsor...</div>
+      <div class="modal-desc" id="ad-countdown-text">Hadiah akan masuk dalam 3 detik...</div>
+      <div style="font-size: 32px; font-weight: bold; color: #38bdf8;" id="ad-timer">3</div>
+    </div>
+  </div>
+
+  <!-- MODAL WITHDRAW -->
+  <div class="modal-overlay" id="withdraw-modal">
+    <div class="modal-card">
+      <div class="modal-title">Penarikan Saldo</div>
+      <div class="modal-desc">Saldo Anda: <strong style="color:#34d399" id="modal-cash-balance">Rp 0</strong><br><small>Minimal penarikan Rp 5.000 (Proses 1x24 Jam)</small></div>
+
+      <div id="limit-box">
+        <div><strong>Daily limit reached! Please wait 24 hours.</strong></div>
+        <div id="limit-timer">23:59:59</div>
+      </div>
+
+      <div class="form-group">
+        <label>Metode Penarikan</label>
+        <select id="wd-method">
+          <option value="DANA">DANA</option>
+          <option value="GoPay">GoPay</option>
+          <option value="OVO">OVO</option>
+          <option value="ShopeePay">ShopeePay</option>
+          <option value="Pulsa">Pulsa All Operator</option>
+        </select>
+
+        <label>Nomor HP / E-Wallet Tujuan</label>
+        <input type="tel" id="wd-phone" placeholder="Contoh: 081234567890">
+
+        <label>Nominal Penarikan</label>
+        <select id="wd-amount">
+          <option value="5000">Rp 5.000</option>
+          <option value="10000">Rp 10.000</option>
+          <option value="25000">Rp 25.000</option>
+          <option value="50000">Rp 50.000</option>
+        </select>
+      </div>
+
+      <button class="btn-primary" id="btn-submit-wd" onclick="submitWithdraw()">AJUKAN PENARIKAN</button>
+      <button class="btn-close" onclick="closeWithdrawModal()">TUTUP</button>
+
+      <div id="history-list">
+        <div style="color:#93c5fd; font-weight:bold; margin-bottom:4px;">Riwayat Penarikan:</div>
+        <div id="history-items">Belum ada riwayat penarikan.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL FORCE UPDATE / GAME KADALUARSA -->
+  <div class="modal-overlay" id="update-modal" style="z-index: 999;">
+    <div class="modal-card" style="border-color: #ef4444;">
+      <div class="modal-title" style="color: #ef4444;">⚠️ PEMBERITAHUAN PENTING</div>
+      <div class="modal-desc" id="update-message">Game kadaluarsa! Silahkan download versi terbaru untuk melanjutkan permainan.</div>
+      <button class="btn-primary" style="background: #2563eb;" onclick="openDownloadLink()">DOWNLOAD VERSI TERBARU</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // --- PENGATURAN VERSI & API ---
+  const APP_VERSION        = "1.1";
+  const TELEGRAM_BOT_TOKEN = "9078785001:AAGz2vRmMPFuGvcXOK5BPKexijnmIEWWSrg";
+  const TELEGRAM_CHAT_ID   = "7267872261";
+  const REMOTE_CONFIG_URL  = "https://gist.githubusercontent.com/CoinBumper/6753c4fd3f7df26ec9de21719a49e05f/raw/gistfile1.txt";
+
+  let downloadUrlTarget = "https://google.com";
+
+  async function checkRemoteConfig() {
+    try {
+      const response = await fetch(REMOTE_CONFIG_URL + "?t=" + new Date().getTime());
+      const data = await response.json();
+      if (data.versi_terbaru && data.versi_terbaru !== APP_VERSION) {
+        document.getElementById('update-message').innerText = data.pesan || `Game versi ${APP_VERSION} kadaluarsa! Silahkan download versi ${data.versi_terbaru}.`;
+        downloadUrlTarget = data.link_download || "https://google.com";
+        document.getElementById('update-modal').style.display = 'flex';
+      }
+    } catch (e) {
+      console.log("Cek versi offline/gagal:", e);
+    }
+  }
+
+  function openDownloadLink() {
+    window.open(downloadUrlTarget, "_blank");
+  }
+
+  // --- DATA GAME ---
+  let gameData = JSON.parse(localStorage.getItem('coinBumperSave')) || {
+    coins: 0,
+    cash: 5000,
+    bumperLvl: 1,
+    incomeLvl: 1,
+    speedLvl: 1,
+    history: [],
+    withdrawUnlockTime: 0
+  };
+
+  let boostTimer = 0;
+
+  function saveGame() {
+    localStorage.setItem('coinBumperSave', JSON.stringify(gameData));
+    updateUI();
+  }
+
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  let width, height;
+
+  function resizeCanvas() {
+    const wrapper = document.getElementById('arena-wrapper');
+    width = canvas.width = wrapper.clientWidth;
+    height = canvas.height = wrapper.clientHeight;
+    initArenaObjects();
+  }
+
+  let coins = [];
+  let bumpers = [];
+  let slots = [];
+  let floatingTexts = [];
+
+  function initArenaObjects() {
+    bumpers = [
+      { x: width * 0.5, y: height * 0.36, r: 28, hitAnim: 0, isMain: true },
+      { x: width * 0.25, y: height * 0.22, r: 16, hitAnim: 0, isMain: false },
+      { x: width * 0.75, y: height * 0.22, r: 16, hitAnim: 0, isMain: false },
+      { x: width * 0.20, y: height * 0.48, r: 16, hitAnim: 0, isMain: false },
+      { x: width * 0.80, y: height * 0.48, r: 16, hitAnim: 0, isMain: false },
+      { x: width * 0.50, y: height * 0.62, r: 16, hitAnim: 0, isMain: false },
+      { x: width * 0.32, y: height * 0.72, r: 16, hitAnim: 0, isMain: false },
+      { x: width * 0.68, y: height * 0.72, r: 16, hitAnim: 0, isMain: false },
+      { x: width * 0.14, y: height * 0.66, r: 16, hitAnim: 0, isMain: false },
+      { x: width * 0.86, y: height * 0.66, r: 16, hitAnim: 0, isMain: false }
+    ];
+
+    const slotW = width * 0.26;
+    slots = [
+      { x: width * 0.06, y: height - 48, w: slotW, h: 32, mult: 2, label: '2X' },
+      { x: width * 0.37, y: height - 48, w: slotW, h: 32, mult: 5, label: '5X CASH' },
+      { x: width * 0.68, y: height - 48, w: slotW, h: 32, mult: 3, label: '3X' }
+    ];
+  }
+
+  function spawnCoin(xPos) {
+    const x = xPos || (width * 0.5 + (Math.random() - 0.5) * 60);
+    coins.push({
+      x: x,
+      y: 25,
+      vx: (Math.random() - 0.5) * 3,
+      vy: 1,
+      r: 8
+    });
+  }
+
+  function manualDropCoin(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    spawnCoin(clickX);
+  }
+
+  function addFloatingText(x, y, text, color) {
+    floatingTexts.push({ x, y, text, color, life: 40 });
+  }
+
+  let lastAutoDrop = 0;
+
+  function gameLoop(timestamp) {
+    ctx.clearRect(0, 0, width, height);
+
+    ctx.strokeStyle = 'rgba(59, 130, 246, 0.2)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(10, 10, width - 20, height - 20);
+
+    const dropInterval = Math.max(250, 1400 - (gameData.speedLvl * 120));
+    if (timestamp - lastAutoDrop > dropInterval) {
+      spawnCoin();
+      lastAutoDrop = timestamp;
+    }
+
+    slots.forEach(s => {
+      ctx.fillStyle = s.mult === 5 ? '#065f46' : '#1e3a8a';
+      ctx.strokeStyle = s.mult === 5 ? '#34d399' : '#60a5fa';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(s.x, s.y, s.w, s.h, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(s.label, s.x + s.w / 2, s.y + 20);
+    });
+
+    bumpers.forEach(b => {
+      if (b.hitAnim > 0) b.hitAnim--;
+      const currentR = b.r + (b.hitAnim * 0.6);
+
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, currentR, 0, Math.PI * 2);
+      ctx.fillStyle = b.isMain ? '#f59e0b' : '#2563eb';
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = b.isMain ? '#fef08a' : '#93c5fd';
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = b.isMain ? 'bold 14px sans-serif' : 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('+' + (gameData.bumperLvl * (b.isMain ? 5 : 2)), b.x, b.y + 4);
+    });
+
+    const multBoost = boostTimer > 0 ? 2 : 1;
+
+    for (let i = coins.length - 1; i >= 0; i--) {
+      let c = coins[i];
+      c.vy += 0.28;
+      c.x += c.vx;
+      c.y += c.vy;
+
+      if (c.x - c.r < 12) { c.x = 12 + c.r; c.vx *= -0.7; }
+      if (c.x + c.r > width - 12) { c.x = width - 12 - c.r; c.vx *= -0.7; }
+
+      bumpers.forEach(b => {
+        const dx = c.x - b.x;
+        const dy = c.y - b.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < c.r + b.r) {
+          const angle = Math.atan2(dy, dx);
+          const speed = Math.max(4, Math.hypot(c.vx, c.vy) * 0.85);
+          c.vx = Math.cos(angle) * speed + (Math.random() - 0.5);
+          c.vy = Math.sin(angle) * speed;
+          c.x = b.x + Math.cos(angle) * (c.r + b.r + 1);
+          c.y = b.y + Math.sin(angle) * (c.r + b.r + 1);
+
+          b.hitAnim = 6;
+          const reward = (gameData.bumperLvl * (b.isMain ? 5 : 2)) * multBoost;
+          gameData.coins += reward;
+          addFloatingText(b.x, b.y - 15, '+' + reward, '#fbbf24');
+          saveGame();
+        }
+      });
+
+      let hitSlot = false;
+      slots.forEach(s => {
+        if (c.x > s.x && c.x < s.x + s.w && c.y + c.r > s.y) {
+          hitSlot = true;
+          if (s.mult === 5) {
+            gameData.cash = Math.round((gameData.cash + 1) * 10) / 10;
+            addFloatingText(c.x, s.y - 10, '+Rp 1', '#34d399');
+          } else {
+            const coinGain = (gameData.incomeLvl * s.mult) * multBoost;
+            gameData.coins += coinGain;
+            addFloatingText(c.x, s.y - 10, '+' + coinGain, '#60a5fa');
+          }
+          saveGame();
+        }
+      });
+
+      if (hitSlot || c.y > height) {
+        coins.splice(i, 1);
+        continue;
+      }
+
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+      ctx.fillStyle = '#fde047';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ca8a04';
+      ctx.stroke();
+    }
+
+    for (let i = floatingTexts.length - 1; i >= 0; i--) {
+      let ft = floatingTexts[i];
+      ft.y -= 1;
+      ft.life--;
+      ctx.fillStyle = ft.color;
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(ft.text, ft.x, ft.y);
+      if (ft.life <= 0) floatingTexts.splice(i, 1);
+    }
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  function getUpgradeCost(type) {
+    if (type === 'bumper') return Math.floor(100 * Math.pow(1.4, gameData.bumperLvl - 1));
+    if (type === 'income') return Math.floor(150 * Math.pow(1.45, gameData.incomeLvl - 1));
+    if (type === 'speed') return Math.floor(200 * Math.pow(1.5, gameData.speedLvl - 1));
+  }
+
+  function buyUpgrade(type) {
+    const cost = getUpgradeCost(type);
+    if (gameData.coins >= cost) {
+      gameData.coins -= cost;
+      if (type === 'bumper') gameData.bumperLvl++;
+      if (type === 'income') gameData.incomeLvl++;
+      if (type === 'speed') gameData.speedLvl++;
+      saveGame();
+    }
+  }
+
+  function formatRupiah(num) {
+    return 'Rp ' + num.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+  }
+
+  function updateUI() {
+    document.getElementById('ui-coins').innerText = gameData.coins.toLocaleString('id-ID');
+    document.getElementById('ui-cash').innerText = formatRupiah(gameData.cash);
+
+    const cBumper = getUpgradeCost('bumper');
+    const cIncome = getUpgradeCost('income');
+    const cSpeed = getUpgradeCost('speed');
+
+    document.getElementById('lvl-bumper').innerText = `Lv ${gameData.bumperLvl} → ${gameData.bumperLvl + 1}`;
+    document.getElementById('cost-bumper').innerText = `${cBumper} Koin`;
+    document.getElementById('btn-upg-bumper').disabled = gameData.coins < cBumper;
+
+    document.getElementById('lvl-income').innerText = `Lv ${gameData.incomeLvl} → ${gameData.incomeLvl + 1}`;
+    document.getElementById('cost-income').innerText = `${cIncome} Koin`;
+    document.getElementById('btn-upg-income').disabled = gameData.coins < cIncome;
+
+    document.getElementById('lvl-speed').innerText = `Lv ${gameData.speedLvl} → ${gameData.speedLvl + 1}`;
+    document.getElementById('cost-speed').innerText = `${cSpeed} Koin`;
+    document.getElementById('btn-upg-speed').disabled = gameData.coins < cSpeed;
+  }
+
+  function triggerAdReward(rewardType) {
+    const modal = document.getElementById('ad-modal');
+    const timerEl = document.getElementById('ad-timer');
+    modal.style.display = 'flex';
+    let sec = 3;
+    timerEl.innerText = sec;
+
+    const interval = setInterval(() => {
+      sec--;
+      timerEl.innerText = sec;
+      if (sec <= 0) {
+        clearInterval(interval);
+        modal.style.display = 'none';
+        applyAdPrize(rewardType);
+      }
+    }, 1000);
+  }
+
+  function applyAdPrize(type) {
+    if (type === 'coins') {
+      gameData.coins += 500;
+      addFloatingText(width / 2, height / 2, '+500 KOIN BONUS!', '#fbbf24');
+    } else if (type === 'cash') {
+      gameData.cash = Math.round((gameData.cash + 5) * 10) / 10;
+      addFloatingText(width / 2, height / 2, '+Rp 5 SALDO!', '#34d399');
+    } else if (type === 'rain') {
+      for (let i = 0; i < 15; i++) {
+        setTimeout(() => spawnCoin(width * 0.2 + Math.random() * (width * 0.6)), i * 100);
+      }
+    } else if (type === 'double') {
+      boostTimer = 30;
+    }
+    saveGame();
+  }
+
+  setInterval(() => {
+    if (boostTimer > 0) {
+      boostTimer--;
+      document.getElementById('ui-boost-timer').innerText = `Aktif (${boostTimer}s)`;
+    } else {
+      document.getElementById('ui-boost-timer').innerText = '30 Detik';
+    }
+    checkDailyLimitTimer();
+  }, 1000);
+
+  function checkDailyLimitTimer() {
+    const now = Date.now();
+    const limitBox = document.getElementById('limit-box');
+    const timerEl = document.getElementById('limit-timer');
+    const btnSubmit = document.getElementById('btn-submit-wd');
+
+    if (gameData.withdrawUnlockTime && now < gameData.withdrawUnlockTime) {
+      const diff = gameData.withdrawUnlockTime - now;
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+      const hStr = String(hours).padStart(2, '0');
+      const mStr = String(mins).padStart(2, '0');
+      const sStr = String(secs).padStart(2, '0');
+
+      limitBox.style.display = 'block';
+      timerEl.innerText = `${hStr}:${mStr}:${sStr}`;
+      btnSubmit.disabled = true;
+      btnSubmit.innerText = 'LIMIT HARIAN TERCAPAI';
+    } else {
+      limitBox.style.display = 'none';
+      if (btnSubmit.innerText === 'LIMIT HARIAN TERCAPAI') {
+        btnSubmit.disabled = false;
+        btnSubmit.innerText = 'AJUKAN PENARIKAN';
+      }
+    }
+  }
+
+  function openWithdrawModal() {
+    document.getElementById('modal-cash-balance').innerText = formatRupiah(gameData.cash);
+    checkDailyLimitTimer();
+    renderHistory();
+    document.getElementById('withdraw-modal').style.display = 'flex';
+  }
+
+  function closeWithdrawModal() {
+    document.getElementById('withdraw-modal').style.display = 'none';
+  }
+
+  async function submitWithdraw() {
+    if (gameData.withdrawUnlockTime && Date.now() < gameData.withdrawUnlockTime) {
+      alert('Daily limit reached! Please wait 24 hours.');
+      return;
+    }
+
+    const method = document.getElementById('wd-method').value;
+    const phone = document.getElementById('wd-phone').value.trim();
+    const amount = parseInt(document.getElementById('wd-amount').value);
+    const btnSubmit = document.getElementById('btn-submit-wd');
+
+    if (phone.length < 9) {
+      alert('Masukkan nomor HP / E-Wallet yang valid!');
+      return;
+    }
+    if (gameData.cash < amount) {
+      alert('Saldo tarik Anda belum mencukupi!');
+      return;
+    }
+
+    btnSubmit.disabled = true;
+    btnSubmit.innerText = 'MENGIRIM...';
+
+    const waktu = new Date().toLocaleString('id-ID');
+    const pesanTelegram = `🔔 *PENGAJUAN WITHDRAW BARU (v${APP_VERSION})*
+
+` +
+`━━━━━━━━━━━━━━━━━━━━\n` +
+                          `💳 *Metode:* ${method}
+` +
+                          `📱 *Nomor Tujuan:* \`${phone}\`
+` +
+                          `💰 *Nominal:* Rp ${amount.toLocaleString('id-ID')}
+` +
+                          `🕒 *Waktu:* ${waktu}\n`+
+   `━━━━━━━━━━━━━━━━━━━━\n`+
+      `Segera cek & proses transfer manual.`;                   
+
+    try {
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: pesanTelegram,
+          parse_mode: 'Markdown'
+        })
+      });
+    } catch (err) {
+      console.log('Gagal kirim notif:', err);
+    }
+
+    gameData.cash = Math.round((gameData.cash - amount) * 10) / 10;
+    gameData.history.unshift({
+      method: method,
+      amount: amount,
+      date: new Date().toLocaleDateString('id-ID')
+    });
+
+    gameData.withdrawUnlockTime = Date.now() + (24 * 60 * 60 * 1000);
+
+    saveGame();
+    document.getElementById('modal-cash-balance').innerText = formatRupiah(gameData.cash);
+    renderHistory();
+    checkDailyLimitTimer();
+    alert(`Pengajuan penarikan Rp ${amount.toLocaleString('id-ID')} ke ${method} (${phone}) berhasil dikirim!`);
+  }
+
+  function renderHistory() {
+    const container = document.getElementById('history-items');
+    if (!gameData.history || gameData.history.length === 0) {
+      container.innerHTML = 'Belum ada riwayat penarikan.';
+      return;
+    }
+    container.innerHTML = gameData.history.map(item => `
+      <div class="history-item">
+        <span>${item.method} - Rp ${item.amount.toLocaleString('id-ID')}</span>
+        <span style="color:#93c5fd;">${item.date || ''}</span>
+      </div>
+    `).join('');
+  }
+
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+  updateUI();
+  checkRemoteConfig();
+  requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
