@@ -500,7 +500,7 @@
   // --- DATA GAME ---
   let gameData = JSON.parse(localStorage.getItem('coinBumperSave')) || {
     coins: 0,
-    cash: 5000,
+    cash: 0,
     bumperLvl: 1,
     incomeLvl: 1,
     speedLvl: 1,
@@ -658,8 +658,8 @@
         if (c.x > s.x && c.x < s.x + s.w && c.y + c.r > s.y) {
           hitSlot = true;
           if (s.mult === 5) {
-            gameData.cash = Math.round((gameData.cash + 1) * 10) / 10;
-            addFloatingText(c.x, s.y - 10, '+Rp 1', '#34d399');
+            gameData.cash = Math.round((gameData.cash + 0.5) * 10) / 10;
+            addFloatingText(c.x, s.y - 10, '+Rp 0.5', '#34d399');
           } else {
             const coinGain = (gameData.incomeLvl * s.mult) * multBoost;
             gameData.coins += coinGain;
