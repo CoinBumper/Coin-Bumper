@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Coin Bumper Cash</title>
 <script src='//libtl.com/sdk.js' data-zone='12246483' data-sdk='show_12246483'></script>
+<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 <style>
   * {
     box-sizing: border-box;
@@ -375,7 +376,7 @@
       </div>
       <div class="ad-box" onclick="triggerAdReward('cash')">
         <div class="ad-badge">ADS</div>
-        <div class="ad-title">+Rp 5</div>
+        <div class="ad-title">+Rp 30</div>
         <div class="ad-sub">Saldo Tarik</div>
       </div>
       <div class="ad-box" onclick="triggerAdReward('rain')">
@@ -475,10 +476,20 @@
   const TELEGRAM_BOT_TOKEN = "9078785001:AAGz2vRmMPFuGvcXOK5BPKexijnmIEWWSrg";
   const TELEGRAM_CHAT_ID   = "7267872261";
   const REMOTE_CONFIG_URL  = "https://gist.githubusercontent.com/CoinBumper/6753c4fd3f7df26ec9de21719a49e05f/raw/gistfile1.txt";
+  const ADSGRAM_BLOCK_ID   = "int-59386";
 
   let downloadUrlTarget = "https://google.com";
+  let adRotationTurn = 0; // 0 = Adsgram, 1 = Monetag (muter bergantian)
+  let AdsgramController = null;
 
-  function initMonetagInApp() {
+  function initAdNetworks() {
+    if (window.Adsgram) {
+      try {
+        AdsgramController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
+      } catch (e) {
+        console.log("Adsgram init error:", e);
+      }
+    }
     if (typeof show_12246483 === 'function') {
       show_12246483({
         type: 'inApp',
@@ -671,8 +682,8 @@
         if (c.x > s.x && c.x < s.x + s.w && c.y + c.r > s.y) {
           hitSlot = true;
           if (s.mult === 5) {
-            gameData.cash = Math.round((gameData.cash + 0.5) * 10) / 10;
-            addFloatingText(c.x, s.y - 10, '+Rp 0,5', '#34d399');
+            gameData.cash = Math.round((gameData.cash + 0.6) * 10) / 10;
+            addFloatingText(c.x, s.y - 10, '+Rp 0,6', '#34d399');
           } else {
             const coinGain = (gameData.incomeLvl * s.mult) * multBoost;
             gameData.coins += coinGain;
@@ -752,16 +763,57 @@
     document.getElementById('btn-upg-speed').disabled = gameData.coins < cSpeed;
   }
 
+  // --- ROTASI IKLAN BERGANTIAN: ADSGRAM (int-59386) <-> MONETAG (12246483) ---
   function triggerAdReward(rewardType) {
+    const currentNetwork = adRotationTurn;
+    adRotationTurn = (adRotationTurn + 1) % 2; // Tukar giliran untuk klik berikutnya
+
+    if (currentNetwork === 0) {
+      // Giliran Adsgram dulu, jika gagal/kosong otomatis oper ke Monetag
+      playAdsgram(rewardType, () => {
+        playMonetag(rewardType, () => runFallbackTimer(rewardType));
+      });
+    } else {
+      // Giliran Monetag dulu, jika gagal/kosong otomatis oper ke Adsgram
+      playMonetag(rewardType, () => {
+        playAdsgram(rewardType, () => runFallbackTimer(rewardType));
+      });
+    }
+  }
+
+  function playAdsgram(rewardType, onFailCallback) {
+    if (!AdsgramController && window.Adsgram) {
+      try {
+        AdsgramController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
+      } catch (e) {}
+    }
+
+    if (AdsgramController) {
+      AdsgramController.show().then((result) => {
+        if (result && (result.done || !result.error)) {
+          giveAdPrize(rewardType);
+        } else {
+          onFailCallback();
+        }
+      }).catch((err) => {
+        console.log("Adsgram error/empty:", err);
+        onFailCallback();
+      });
+    } else {
+      onFailCallback();
+    }
+  }
+
+  function playMonetag(rewardType, onFailCallback) {
     if (typeof show_12246483 === 'function') {
       show_12246483().then(() => {
         giveAdPrize(rewardType);
       }).catch((err) => {
-        console.log("Monetag ad error/skipped:", err);
-        runFallbackTimer(rewardType);
+        console.log("Monetag error/empty:", err);
+        onFailCallback();
       });
     } else {
-      runFallbackTimer(rewardType);
+      onFailCallback();
     }
   }
 
@@ -788,8 +840,8 @@
       gameData.coins += 500;
       addFloatingText(width / 2, height / 2, '+500 KOIN BONUS!', '#fbbf24');
     } else if (type === 'cash') {
-      gameData.cash = Math.round((gameData.cash + 5) * 10) / 10;
-      addFloatingText(width / 2, height / 2, '+Rp 5 SALDO!', '#34d399');
+      gameData.cash = Math.round((gameData.cash + 30) * 10) / 10;
+      addFloatingText(width / 2, height / 2, '+Rp 30 SALDO!', '#34d399');
     } else if (type === 'rain') {
       for (let i = 0; i < 15; i++) {
         setTimeout(() => spawnCoin(width * 0.2 + Math.random() * (width * 0.6)), i * 100);
@@ -937,7 +989,7 @@
   resizeCanvas();
   updateUI();
   checkRemoteConfig();
-  initMonetagInApp();
+  initAdNetworks();
   requestAnimationFrame(gameLoop);
 </script>
 </body>
